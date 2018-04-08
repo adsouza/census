@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
 
 	"github.com/hashicorp/go-multierror"
@@ -38,9 +39,9 @@ func extractNumbers(r *http.Request, fields []string) (map[string]int, *multierr
 	return results, badness
 }
 
-func reportError(ctx context.Context, msg string, w http.ResponseWriter) {
-	w.WriteHeader(http.StatusBadRequest)
+func reportError(ctx context.Context, statusCode int, msg string, w http.ResponseWriter) {
 	log.Errorf(ctx, msg)
+	w.WriteHeader(statusCode)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -51,12 +52,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ctx := appengine.NewContext(r)
-		var badness *multierror.Error
 		fields := []string{"total", "grouped", "solitary", "asleep"}
 		values, badness := extractNumbers(r, fields)
 		if badness.ErrorOrNil() != nil {
 			msg := fmt.Sprintf("Failure parsing numbers: %v.", badness)
-			reportError(ctx, msg, w)
+			reportError(ctx, http.StatusBadRequest, msg, w)
 			return
 		}
 		record := Snapshot{
@@ -70,7 +70,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		if record.Total != record.Grouped+record.Solitary+record.Asleep {
 			msg := fmt.Sprintf("Total (%d) != grouped (%d) + solitary (%d) + asleep (%d).",
 				record.Total, record.Grouped, record.Solitary, record.Asleep)
-			reportError(ctx, msg, w)
+			reportError(ctx, http.StatusBadRequest, msg, w)
+			return
+		}
+		key := datastore.NewIncompleteKey(ctx, "Snapshot", nil)
+		if _, err := datastore.Put(ctx, key, &record); err != nil {
+			msg := fmt.Sprintf("Unable to create new record in DB: %v.", err)
+			reportError(ctx, http.StatusInternalServerError, msg, w)
 			return
 		}
 	}
