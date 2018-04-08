@@ -42,6 +42,7 @@ func extractNumbers(r *http.Request, fields []string) (map[string]int, *multierr
 func reportError(ctx context.Context, statusCode int, msg string, w http.ResponseWriter) {
 	log.Errorf(ctx, msg)
 	w.WriteHeader(statusCode)
+	fmt.Fprintln(w, msg)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
