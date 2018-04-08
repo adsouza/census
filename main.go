@@ -51,7 +51,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		ctx := appengine.NewContext(r)
-		fields := []string{"total", "grouped", "solitary", "asleep"}
+		fields := []string{"total", "grouped", "solitary", "asleep", "laptops"}
+		if len(r.FormValue("decibels")) > 0 {
+			fields = append(fields, "decibels")
+		}
 		values, badness := extractNumbers(r, fields)
 		if len(badness) != 0 {
 			msg := fmt.Sprintf("Failure parsing numbers: %v.", badness)
@@ -65,6 +68,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 				Solitary: values["solitary"],
 				Asleep:   values["asleep"],
 			},
+			Laptops:  values["laptops"],
+			Decibels: values["decibels"],
 		}
 		if record.Total != record.Grouped+record.Solitary+record.Asleep {
 			msg := fmt.Sprintf("Total (%d) != grouped (%d) + solitary (%d) + asleep (%d).",
