@@ -11,8 +11,6 @@ var (
 	indexTmpl = template.Must(template.ParseFiles("index.html"))
 )
 
-type templateParams struct{}
-
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.Redirect(w, r, "/", http.StatusFound)
