@@ -1,11 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"html/template"
 	"net/http"
 
 	"google.golang.org/appengine"
 )
+
+var (
+	indexTmpl = template.Must(template.ParseFiles("index.html"))
+)
+
+type templateParams struct{}
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -13,7 +19,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, "Hello, World!")
+	if r.Method == http.MethodPost {
+		r.FormValue("total")
+	}
+
+	indexTmpl.Execute(w, nil)
 }
 
 func main() {
