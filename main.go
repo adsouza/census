@@ -10,8 +10,6 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
-
-	"github.com/hashicorp/go-multierror"
 )
 
 var (
@@ -27,13 +25,13 @@ type Snapshot struct {
 	Decibels, Laptops int
 }
 
-func extractNumbers(r *http.Request, fields []string) (map[string]int, *multierror.Error) {
+func extractNumbers(r *http.Request, fields []string) (map[string]int, appengine.MultiError) {
 	var err error
 	results := map[string]int{}
-	var badness *multierror.Error
+	var badness appengine.MultiError
 	for _, n := range fields {
 		if results[n], err = strconv.Atoi(r.FormValue(n)); err != nil {
-			badness = multierror.Append(badness, err)
+			badness = append(badness, fmt.Errorf("bad value for \"%s\" field: %v", n, err))
 		}
 	}
 	return results, badness
@@ -55,7 +53,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		ctx := appengine.NewContext(r)
 		fields := []string{"total", "grouped", "solitary", "asleep"}
 		values, badness := extractNumbers(r, fields)
-		if badness.ErrorOrNil() != nil {
+		if len(badness) != 0 {
 			msg := fmt.Sprintf("Failure parsing numbers: %v.", badness)
 			reportError(ctx, http.StatusBadRequest, msg, w)
 			return
