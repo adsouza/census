@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
@@ -25,6 +26,7 @@ type Snapshot struct {
 	People
 	Decibels, Laptops int
 	Area              string
+	TimeStamp         time.Time
 }
 
 func extractNumbers(r *http.Request, fields []string) (map[string]int, appengine.MultiError) {
@@ -51,14 +53,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if area := r.FormValue("area"); r.Method == http.MethodGet && len(area) > 0 {
+	area := r.FormValue("area")
+	if r.Method == http.MethodGet && len(area) > 0 {
 		formTmpl.Execute(w, struct{ Area string }{Area: area})
 		return
 	}
 
 	if r.Method == http.MethodPost {
 		ctx := appengine.NewContext(r)
-		area := r.FormValue("area")
 		if len(area) == 0 {
 			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
 		}
@@ -73,7 +75,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		record := Snapshot{
-			Area: area,
+			TimeStamp: time.Now(),
+			Area:      area,
 			People: People{
 				Total:    values["total"],
 				Grouped:  values["grouped"],
