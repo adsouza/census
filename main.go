@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	indexTmpl = template.Must(template.ParseFiles("index.html"))
+	formTmpl = template.Must(template.ParseFiles("form.html"))
+	mapTmpl  = template.Must(template.ParseFiles("map.html"))
 )
 
 type People struct {
@@ -85,7 +86,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	indexTmpl.Execute(w, nil)
+	if len(r.FormValue("area")) == 0 {
+		mapTmpl.Execute(w, nil)
+		return
+	}
+	formTmpl.Execute(w, nil)
 }
 
 func main() {
