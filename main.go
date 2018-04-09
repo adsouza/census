@@ -24,6 +24,7 @@ type People struct {
 type Snapshot struct {
 	People
 	Decibels, Laptops int
+	Area              string
 }
 
 func extractNumbers(r *http.Request, fields []string) (map[string]int, appengine.MultiError) {
@@ -50,8 +51,17 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if area := r.FormValue("area"); r.Method == http.MethodGet && len(area) > 0 {
+		formTmpl.Execute(w, struct{ Area string }{Area: area})
+		return
+	}
+
 	if r.Method == http.MethodPost {
 		ctx := appengine.NewContext(r)
+		area := r.FormValue("area")
+		if len(area) == 0 {
+			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
+		}
 		fields := []string{"total", "grouped", "solitary", "asleep", "laptops"}
 		if len(r.FormValue("decibels")) > 0 {
 			fields = append(fields, "decibels")
@@ -63,6 +73,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		record := Snapshot{
+			Area: area,
 			People: People{
 				Total:    values["total"],
 				Grouped:  values["grouped"],
@@ -86,11 +97,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(r.FormValue("area")) == 0 {
-		mapTmpl.Execute(w, nil)
-		return
-	}
-	formTmpl.Execute(w, nil)
+	mapTmpl.Execute(w, nil)
 }
 
 func main() {
