@@ -10,16 +10,6 @@ input {
   width: 4em;
   margin: 2px 0;
 }
-fieldset {
-  width: fit-content;
-  width: -moz-fit-content;
-  width: -webkit-fit-content;
-  margin-right: -1em;
-  margin-bottom: 4px;
-  border: 1px dotted lightgrey;
-  border-radius: 1em;
-  padding: 4px 1ex;
-}
 button {
   border-radius: 1ex;
 }

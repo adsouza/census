@@ -19,7 +19,7 @@ var (
 )
 
 type People struct {
-	Total, Grouped, Solitary, Asleep int
+	Groups, Solitary, Asleep int
 }
 
 type Snapshot struct {
@@ -64,7 +64,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		if len(area) == 0 {
 			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
 		}
-		fields := []string{"total", "grouped", "solitary", "asleep", "laptops"}
+		fields := []string{"groups", "solitary", "asleep", "laptops"}
 		if len(r.FormValue("decibels")) > 0 {
 			fields = append(fields, "decibels")
 		}
@@ -78,19 +78,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			TimeStamp: time.Now(),
 			Area:      area,
 			People: People{
-				Total:    values["total"],
-				Grouped:  values["grouped"],
+				Groups:   values["groups"],
 				Solitary: values["solitary"],
 				Asleep:   values["asleep"],
 			},
 			Laptops:  values["laptops"],
 			Decibels: values["decibels"],
-		}
-		if record.Total != record.Grouped+record.Solitary+record.Asleep {
-			msg := fmt.Sprintf("Total (%d) != grouped (%d) + solitary (%d) + asleep (%d).",
-				record.Total, record.Grouped, record.Solitary, record.Asleep)
-			reportError(ctx, http.StatusBadRequest, msg, w)
-			return
 		}
 		key := datastore.NewIncompleteKey(ctx, "Snapshot", nil)
 		if _, err := datastore.Put(ctx, key, &record); err != nil {
