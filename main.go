@@ -19,7 +19,7 @@ var (
 )
 
 type People struct {
-	Groups, Solitary, Asleep int
+	Groups, Solitary, Asleep, Floored int
 }
 
 type Snapshot struct {
@@ -65,7 +65,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		if len(area) == 0 {
 			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
 		}
-		fields := []string{"groups", "solitary", "asleep", "laptops"}
+		fields := []string{"groups", "solitary", "asleep", "floored", "laptops"}
 		if len(r.FormValue("decibels")) > 0 {
 			fields = append(fields, "decibels")
 		}
@@ -82,6 +82,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 				Groups:   values["groups"],
 				Solitary: values["solitary"],
 				Asleep:   values["asleep"],
+				Floored:  values["floored"],
 			},
 			Laptops:  values["laptops"],
 			Decibels: values["decibels"],
