@@ -2,21 +2,38 @@
 <meta charset="utf-8">
 <title>Census: track indoor space usage</title>
 
-<h1>Tap a red box</h1>
+<h1>Floor {{.Floor}}: tap a blue box.</h1>
+<p><a href="/?floor={{if eq .Floor "2"}}1{{else}}2{{end}}">Switch floor</a>
 
-<img src="static/1.png" usemap="#1st-floor">
-<map name="1st-floor">
-	<area target="" alt="" title="" href="/?area=1" coords="78,131,456,293" shape="rect">
-	<area target="" alt="" title="" href="/?area=2" coords="589,167,708,306" shape="rect">
-	<area target="" alt="" title="" href="/?area=3" coords="879,122,1058,301" shape="rect">
-	<area target="" alt="" title="" href="/?area=4" coords="1181,124,1400,306" shape="rect">
-	<area target="" alt="" title="" href="/?area=5" coords="290,349,822,509" shape="rect">
-	<area target="" alt="" title="" href="/?area=6" coords="836,390,1463,515" shape="rect">
-	<area target="" alt="" title="" href="/?area=7" coords="361,586,475,760" shape="rect">
-	<area target="" alt="" title="" href="/?area=8" coords="491,543,624,731" shape="rect">
-	<area target="" alt="" title="" href="/?area=9" coords="915,602,1447,672" shape="rect">
-	<area target="" alt="" title="" href="/?area=10" coords="858,714,1390,777" shape="rect">
-	<area target="" alt="" title="" href="/?area=11" coords="904,1100,1376,1148" shape="rect">
-	<area target="" alt="" title="" href="/?area=12" coords="885,1236,1362,1277" shape="rect">
-	<area target="" alt="" title="" href="/?area=13" coords="1656,201,1778,312" shape="rect">
+<img src="static/{{.Floor}}.png" usemap="#floor{{.Floor}}">
+<map name="floor{{.Floor}}">
+{{if eq .Floor "1"}}
+	<area target="" alt="" title="" href="/?area=L1" coords="78,131,456,293" shape="rect">
+	<area target="" alt="" title="" href="/?area=L2" coords="589,167,708,306" shape="rect">
+	<area target="" alt="" title="" href="/?area=L3" coords="879,122,1058,301" shape="rect">
+	<area target="" alt="" title="" href="/?area=L4" coords="1181,124,1400,306" shape="rect">
+	<area target="" alt="" title="" href="/?area=L5" coords="290,349,822,509" shape="rect">
+	<area target="" alt="" title="" href="/?area=L6" coords="836,390,1463,515" shape="rect">
+	<area target="" alt="" title="" href="/?area=L7" coords="361,586,475,760" shape="rect">
+	<area target="" alt="" title="" href="/?area=L8" coords="491,543,624,731" shape="rect">
+	<area target="" alt="" title="" href="/?area=L9" coords="915,602,1447,672" shape="rect">
+	<area target="" alt="" title="" href="/?area=L10" coords="858,714,1390,777" shape="rect">
+	<area target="" alt="" title="" href="/?area=L11" coords="904,1100,1376,1148" shape="rect">
+	<area target="" alt="" title="" href="/?area=L12" coords="885,1236,1362,1277" shape="rect">
+	<area target="" alt="" title="" href="/?area=L13" coords="1656,201,1778,312" shape="rect">
+{{else if eq .Floor "2"}}
+	<area target="" alt="" title="" href="/?area=U1" coords="1094,120,1809,300" shape="rect">
+	<area target="" alt="" title="" href="/?area=U2" coords="1923,133,2205,297" shape="rect">
+	<area target="" alt="" title="" href="/?area=U3" coords="2491,76,2660,291" shape="rect">
+	<area target="" alt="" title="" href="/?area=U4" coords="1464,435,2630,527" shape="rect">
+	<area target="" alt="" title="" href="/?area=U5" coords="302,843,521,970" shape="rect">
+	<area target="" alt="" title="" href="/?area=U6" coords="315,1009,584,1126" shape="rect">
+	<area target="" alt="" title="" href="/?area=U7" coords="774,1017,1014,1135" shape="rect">
+	<area target="" alt="" title="" href="/?area=U8" coords="1713,857,1864,1138" shape="rect">
+	<area target="" alt="" title="" href="/?area=U9" coords="273,1228,601,1388" shape="rect">
+	<area target="" alt="" title="" href="/?area=U10" coords="2112,1465,2298,1633" shape="rect">
+	<area target="" alt="" title="" href="/?area=U11" coords="2727,1495,2879,1827" shape="rect">
+	<area target="" alt="" title="" href="/?area=U12" coords="1666,1773,2390,1849" shape="rect">
+	<area target="" alt="" title="" href="/?area=U13" coords="2437,1674,2634,1922" shape="rect">
+{{end}}
 </map>

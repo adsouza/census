@@ -52,15 +52,16 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
+	ctx := appengine.NewContext(r)
 
 	area := r.FormValue("area")
 	if r.Method == http.MethodGet && len(area) > 0 {
 		formTmpl.Execute(w, struct{ Area string }{Area: area})
 		return
 	}
+	floor := r.FormValue("floor")
 
 	if r.Method == http.MethodPost {
-		ctx := appengine.NewContext(r)
 		if len(area) == 0 {
 			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
 		}
@@ -91,9 +92,20 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			reportError(ctx, http.StatusInternalServerError, msg, w)
 			return
 		}
+		if area[0] == 'U' {
+			floor = "2"
+		}
 	}
 
-	mapTmpl.Execute(w, nil)
+	if floor == "" {
+		floor = "1"
+	}
+	if floor != "1" && floor != "2" {
+		msg := fmt.Sprintf("Invalid floor: %v.", floor)
+		reportError(ctx, http.StatusBadRequest, msg, w)
+		return
+	}
+	mapTmpl.Execute(w, struct{ Floor string }{Floor: floor})
 }
 
 func main() {
