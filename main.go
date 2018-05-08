@@ -19,14 +19,14 @@ var (
 )
 
 type People struct {
-	Groups, Solitary, Asleep, Floored int
+	Seated, Floored int
 }
 
 type Snapshot struct {
 	People
-	Decibels, Laptops int
-	Area              string
-	TimeStamp         time.Time
+	Decibels  int
+	Area      string
+	TimeStamp time.Time
 }
 
 func extractNumbers(r *http.Request, fields []string) (map[string]int, appengine.MultiError) {
@@ -65,7 +65,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		if len(area) == 0 {
 			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
 		}
-		fields := []string{"groups", "solitary", "asleep", "floored", "laptops"}
+		fields := []string{"seated", "floored"}
 		if len(r.FormValue("decibels")) > 0 {
 			fields = append(fields, "decibels")
 		}
@@ -79,12 +79,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			TimeStamp: time.Now(),
 			Area:      area,
 			People: People{
-				Groups:   values["groups"],
-				Solitary: values["solitary"],
-				Asleep:   values["asleep"],
-				Floored:  values["floored"],
+				Seated:  values["seated"],
+				Floored: values["floored"],
 			},
-			Laptops:  values["laptops"],
 			Decibels: values["decibels"],
 		}
 		key := datastore.NewIncompleteKey(ctx, "Snapshot", nil)
