@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Census: history for area {{.Area}}</title>
+<link rel="preload" href="static/style.css" as="style">
+
+<h1>Census: history for area {{.Area}}</h1>
+{{range .Records}}
+<form action="/history" method="post">
+	<input type="hidden" name="area" value="{{$.Area}}">
+	<input type="hidden" name="id" value="{{.Key.IntID}}">
+	<input type="hidden" name="ts" value="{{.TimeStamp.Unix}}">
+	{{.TimeStamp.Format "2006-01-02 @ 3:04pm"}}:&nbsp;
+	<label for="decibels">Decibels:</label>
+	<input type="number" name="decibels" min="0" max="125" value="{{.Decibels}}" required>
+	<label for="seated">Studying:</label>
+	<input type="number" name="seated" min="0" max="125" value="{{.Seated}}" required>
+	<label for="floored">On floor:</label>
+	<input type="number" name="floored" min="0" max="125" value="{{.Floored}}" required>
+	<button type="submit">Update</button>
+</form><br clear="all">
+{{end}}
+
+<link rel="stylesheet" property="stylesheet" href="static/style.css">

@@ -5,6 +5,7 @@ body {
 form {
   text-align: right;
   float: left;
+  margin-right: 1em;
 }
 input {
   width: 4em;

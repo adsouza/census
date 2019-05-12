@@ -12,16 +12,18 @@ function incr(numFieldId) {
 <h1>Census: indoor space usage tracker</h1>
 <form action="/" method="post">
 	<input type="hidden" name="area" value="{{.Area}}">
-	<label for="decibels">Decibel level :</label>
-	<input type="number" id="decibels" name="decibels" min="0" autofocus><br>
+	<label for="decibels">Decibel level:</label>
+	<input type="number" id="decibels" name="decibels" min="0" max="125" required autofocus><br>
 	<label for="seated">Individuals studying:</label>
-	<input type="number" id="seated" name="seated" min="0" value="0">
+	<input type="number" id="seated" name="seated" min="0" max="125" value="0" required>
 	<button type="button" onclick="incr('seated')">+1</button><br>
 	<label for="floored">People on the floor:</label>
-	<input type="number" id="floored" name="floored" min="0" value="0">
+	<input type="number" id="floored" name="floored" min="0" max="125" value="0" required>
 	<button type="button" onclick="incr('floored')">+1</button><br>
 	<button type="submit" id="save">Save</button>
 </form>
+
+<p><a href="/history?area={{.Area}}">View/edit historical data for this area.</a>
 
 <link rel="stylesheet" property="stylesheet" href="static/style.css">
 <style>
