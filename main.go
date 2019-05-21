@@ -24,18 +24,11 @@ type IntFieldName string
 const (
 	id        IntFieldName = "id"
 	timestamp IntFieldName = "ts"
-	decibels  IntFieldName = "decibels"
-	seated    IntFieldName = "seated"
-	floored   IntFieldName = "floored"
+	people    IntFieldName = "people"
 )
 
-type People struct {
-	Seated, Floored int8
-}
-
 type Snapshot struct {
-	People
-	Decibels  int8
+	People    int8
 	Area      string
 	TimeStamp time.Time
 	//Key *datastore.Key `datastore:"__key__"`
@@ -77,10 +70,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		if area == "" {
 			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
 		}
-		fields := []IntFieldName{seated, floored}
-		if len(r.FormValue("decibels")) > 0 {
-			fields = append(fields, decibels)
-		}
+		fields := []IntFieldName{people}
 		values, badness := extractNumbers(r, fields)
 		if len(badness) != 0 {
 			msg := fmt.Sprintf("Failure parsing numbers: %v.", badness)
@@ -90,11 +80,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		record := Snapshot{
 			TimeStamp: time.Now(),
 			Area:      area,
-			People: People{
-				Seated:  int8(values[seated]),
-				Floored: int8(values[floored]),
-			},
-			Decibels: int8(values[decibels]),
+			People:    int8(values[people]),
 		}
 		key := datastore.NewIncompleteKey(ctx, "Snapshot", nil)
 		if _, err := datastore.Put(ctx, key, &record); err != nil {
@@ -149,7 +135,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		historyTmpl.Execute(w, Listing{Area: area, Records: snapshots})
 	case http.MethodPost:
-		fields := []IntFieldName{id, timestamp, decibels, seated, floored}
+		fields := []IntFieldName{id, timestamp, people}
 		values, badness := extractNumbers(r, fields)
 		if len(badness) != 0 {
 			msg := fmt.Sprintf("Failure parsing integer parameter: %v.", badness)
@@ -159,11 +145,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 		record := Snapshot{
 			TimeStamp: time.Unix(int64(values[timestamp]), 0),
 			Area:      area,
-			People: People{
-				Seated:  int8(values[seated]),
-				Floored: int8(values[floored]),
-			},
-			Decibels: int8(values[decibels]),
+			People:    int8(values[people]),
 		}
 		key := datastore.NewKey(ctx, "Snapshot", "", int64(values[id]), nil)
 		if _, err := datastore.Put(ctx, key, &record); err != nil {
