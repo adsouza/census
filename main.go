@@ -130,7 +130,14 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		snapshots := []KeyedRecord{}
+		ny, err := time.LoadLocation("America/New_York")
+		if err != nil {
+			log.Errorf(ctx, "Unable to load location from TZ DB.")
+		}
 		for i, r := range records {
+			if ny != nil {
+				r.TimeStamp = r.TimeStamp.In(ny)
+			}
 			snapshots = append(snapshots, KeyedRecord{Snapshot: r, Key: keys[i]})
 		}
 		historyTmpl.Execute(w, Listing{Area: area, Records: snapshots})
