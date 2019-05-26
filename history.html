@@ -8,7 +8,7 @@
 {{range .Records}}
 <form action="/history" method="post">
 	<input type="hidden" name="area" value="{{$.Area}}">
-	<input type="hidden" name="id" value="{{.Key.IntID}}">
+	<input type="hidden" name="id" value="{{.Key.ID}}">
 	<input type="hidden" name="ts" value="{{.TimeStamp.Unix}}">
 	{{.TimeStamp.Format "2006-01-02 @ 3:04pm"}}:&nbsp;
 	<label for="people">People:</label>

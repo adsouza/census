@@ -12,3 +12,6 @@
 
 # Metadata file created by OS X
 .DS_Store
+
+# Secret auth cert for GCS
+census-1949da3b6a29.json

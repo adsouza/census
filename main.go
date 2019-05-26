@@ -4,19 +4,21 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/log"
+	"cloud.google.com/go/datastore"
+	"github.com/hashicorp/go-multierror"
 )
 
 var (
 	formTmpl    = template.Must(template.ParseFiles("form.html"))
 	mapTmpl     = template.Must(template.ParseFiles("map.html"))
 	historyTmpl = template.Must(template.ParseFiles("history.html"))
+	dsc         *datastore.Client
 )
 
 type IntFieldName string
@@ -31,23 +33,23 @@ type Snapshot struct {
 	People    int8
 	Area      string
 	TimeStamp time.Time
-	//Key *datastore.Key `datastore:"__key__"`
+	Key       *datastore.Key `datastore:"__key__"`
 }
 
-func extractNumbers(r *http.Request, fields []IntFieldName) (map[IntFieldName]int, appengine.MultiError) {
+func extractNumbers(r *http.Request, fields []IntFieldName) (map[IntFieldName]int, *multierror.Error) {
 	var err error
 	results := map[IntFieldName]int{}
-	var badness appengine.MultiError
+	var badness *multierror.Error
 	for _, n := range fields {
 		if results[n], err = strconv.Atoi(r.FormValue(string(n))); err != nil {
-			badness = append(badness, fmt.Errorf("bad value for \"%s\" field: %v", n, err))
+			badness = multierror.Append(badness, fmt.Errorf("bad value for \"%s\" field: %v", n, err))
 		}
 	}
 	return results, badness
 }
 
-func reportError(ctx context.Context, statusCode int, msg string, w http.ResponseWriter) {
-	log.Errorf(ctx, msg)
+func reportError(statusCode int, msg string, w http.ResponseWriter) {
+	log.Printf(msg)
 	w.WriteHeader(statusCode)
 	fmt.Fprintln(w, msg)
 }
@@ -57,24 +59,27 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	ctx := appengine.NewContext(r)
+	ctx := r.Context()
 
 	area := r.FormValue("area")
 	if r.Method == http.MethodGet && area != "" {
-		formTmpl.Execute(w, struct{ Area string }{Area: area})
+		if err := formTmpl.Execute(w, struct{ Area string }{Area: area}); err != nil {
+			msg := fmt.Sprintf("Unable to render form template: %v.", err)
+			reportError(http.StatusInternalServerError, msg, w)
+		}
 		return
 	}
 	floor := r.FormValue("floor")
 
 	if r.Method == http.MethodPost {
 		if area == "" {
-			reportError(ctx, http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
+			reportError(http.StatusBadRequest, "Hidden form field \"area\" not provided.", w)
 		}
 		fields := []IntFieldName{people}
 		values, badness := extractNumbers(r, fields)
-		if len(badness) != 0 {
+		if badness != nil && badness.Len() != 0 {
 			msg := fmt.Sprintf("Failure parsing numbers: %v.", badness)
-			reportError(ctx, http.StatusBadRequest, msg, w)
+			reportError(http.StatusBadRequest, msg, w)
 			return
 		}
 		record := Snapshot{
@@ -82,10 +87,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			Area:      area,
 			People:    int8(values[people]),
 		}
-		key := datastore.NewIncompleteKey(ctx, "Snapshot", nil)
-		if _, err := datastore.Put(ctx, key, &record); err != nil {
+		key := datastore.IncompleteKey("Snapshot", nil)
+		if _, err := dsc.Put(ctx, key, &record); err != nil {
 			msg := fmt.Sprintf("Unable to create new record in DB: %v.", err)
-			reportError(ctx, http.StatusInternalServerError, msg, w)
+			reportError(http.StatusInternalServerError, msg, w)
 			return
 		}
 		if area[0] == 'U' {
@@ -98,10 +103,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if floor != "1" && floor != "2" {
 		msg := fmt.Sprintf("Invalid floor: %v.", floor)
-		reportError(ctx, http.StatusBadRequest, msg, w)
+		reportError(http.StatusBadRequest, msg, w)
 		return
 	}
-	mapTmpl.Execute(w, struct{ Floor string }{Floor: floor})
+	if err := mapTmpl.Execute(w, struct{ Floor string }{Floor: floor}); err != nil {
+		msg := fmt.Sprintf("Unable to render map template: %v.", err)
+		reportError(http.StatusInternalServerError, msg, w)
+	}
 }
 
 type KeyedRecord struct {
@@ -115,24 +123,24 @@ type Listing struct {
 }
 
 func historyHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+	ctx := r.Context()
 	area := r.FormValue("area")
 	if area == "" {
-		reportError(ctx, http.StatusBadRequest, "Required parameter \"area\" not provided.", w)
+		reportError(http.StatusBadRequest, "Required parameter \"area\" not provided.", w)
 		return
 	}
 	switch r.Method {
 	case http.MethodGet:
 		records := []Snapshot{}
-		keys, err := datastore.NewQuery("Snapshot").Filter("Area =", area).Order("-TimeStamp").GetAll(ctx, &records)
+		keys, err := dsc.GetAll(ctx, datastore.NewQuery("Snapshot").Filter("Area =", area).Order("-TimeStamp"), &records)
 		if err != nil {
-			reportError(ctx, http.StatusInternalServerError, err.Error(), w)
+			reportError(http.StatusInternalServerError, err.Error(), w)
 			return
 		}
 		snapshots := []KeyedRecord{}
 		ny, err := time.LoadLocation("America/New_York")
 		if err != nil {
-			log.Errorf(ctx, "Unable to load location from TZ DB.")
+			log.Printf("Unable to load location from TZ DB.")
 		}
 		for i, r := range records {
 			if ny != nil {
@@ -140,13 +148,16 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			snapshots = append(snapshots, KeyedRecord{Snapshot: r, Key: keys[i]})
 		}
-		historyTmpl.Execute(w, Listing{Area: area, Records: snapshots})
+		if err = historyTmpl.Execute(w, Listing{Area: area, Records: snapshots}); err != nil {
+			msg := fmt.Sprintf("Unable to render history template: %v.", err)
+			reportError(http.StatusInternalServerError, msg, w)
+		}
 	case http.MethodPost:
 		fields := []IntFieldName{id, timestamp, people}
 		values, badness := extractNumbers(r, fields)
-		if len(badness) != 0 {
+		if badness != nil && badness.Len() != 0 {
 			msg := fmt.Sprintf("Failure parsing integer parameter: %v.", badness)
-			reportError(ctx, http.StatusBadRequest, msg, w)
+			reportError(http.StatusBadRequest, msg, w)
 			return
 		}
 		record := Snapshot{
@@ -154,21 +165,33 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 			Area:      area,
 			People:    int8(values[people]),
 		}
-		key := datastore.NewKey(ctx, "Snapshot", "", int64(values[id]), nil)
-		if _, err := datastore.Put(ctx, key, &record); err != nil {
+		key := datastore.IDKey("Snapshot", int64(values[id]), nil)
+		if _, err := dsc.Put(ctx, key, &record); err != nil {
 			msg := fmt.Sprintf("Unable to update record in DB: %v.", err)
-			reportError(ctx, http.StatusInternalServerError, msg, w)
+			reportError(http.StatusInternalServerError, msg, w)
 			return
 		}
 		w.Header()["Location"] = append(w.Header()["Location"], fmt.Sprintf("/history?area=%s", area))
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	default:
-		reportError(ctx, http.StatusMethodNotAllowed, fmt.Sprintf("Unsupported HTTP method %s.", r.Method), w)
+		reportError(http.StatusMethodNotAllowed, fmt.Sprintf("Unsupported HTTP method %s.", r.Method), w)
 	}
 }
 
 func main() {
+	ctx := context.Background()
+	var err error
+	dsc, err = datastore.NewClient(ctx, "census-199900")
+	if err != nil {
+		log.Fatalf("Cannot establish connection to DataStore: %s", err)
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+		log.Printf("Defaulting to port %s", port)
+	}
+	log.Printf("Listening on port %s", port)
 	http.HandleFunc("/history", historyHandler)
 	http.HandleFunc("/", indexHandler)
-	appengine.Main()
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
