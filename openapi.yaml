@@ -87,6 +87,6 @@ components:
           type: integer
         ts:
           type: integer
-          required:
-            - area
-            - people
+      required:
+        - area
+        - people
