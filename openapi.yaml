@@ -1,0 +1,92 @@
+openapi: "3.0.2"
+info:
+  title: Census API
+  description: API for the Census backend
+  version: 1.0.0
+paths:
+  /:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/area'
+        - name: floor
+          in: query
+          allowEmptyValue: true
+          schema:
+            type: integer
+            enum: [1, 2]
+      responses:
+        '400':
+          $ref: '#/components/responses/400Error'
+        '500':
+          description: internal server error
+        '200':
+          description: request handled successfully
+    post:
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Snapshot'
+      responses:
+        '400':
+          $ref: '#/components/responses/400Error'
+        '500':
+          description: internal server error
+        '200':
+          description: request handled successfully
+  /history:
+    get:
+      parameters:
+        - $ref: '#/components/parameters/area'
+      responses:
+        '400':
+          $ref: '#/components/responses/400Error'
+        '500':
+          description: internal server error
+        '200':
+          description: request handled successfully
+    post:
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Snapshot'
+      responses:
+        '400':
+          $ref: '#/components/responses/400Error'
+        '500':
+          description: internal server error
+        '303':
+          description: see other (redirect to home)
+components:
+  parameters:
+    area:
+      name: area
+      in: query
+      schema:
+        type: string
+  responses:
+    400Error:
+      description: Invalid request
+      content:
+        text/plain:
+          schema:
+            title: Bad input
+            type: string
+  schemas:
+    Snapshot:
+      type: object
+      properties:
+        area:
+          type: string
+        people:
+          type: integer
+        id:
+          type: integer
+        ts:
+          type: integer
+          required:
+            - area
+            - people
