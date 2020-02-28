@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"html/template"
 	"log"
@@ -122,6 +123,21 @@ type Listing struct {
 	Records []KeyedRecord
 }
 
+func addKeysToSnapshots(snapshots []Snapshot, keys []*datastore.Key) []KeyedRecord {
+	records := []KeyedRecord{}
+	ny, err := time.LoadLocation("America/New_York")
+	if err != nil {
+		log.Printf("Unable to load location from TZ DB.")
+	}
+	for i, r := range snapshots {
+		if ny != nil {
+			r.TimeStamp = r.TimeStamp.In(ny)
+		}
+		records = append(records, KeyedRecord{Snapshot: r, Key: keys[i]})
+	}
+	return records
+}
+
 func historyHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	area := r.FormValue("area")
@@ -131,24 +147,14 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case http.MethodGet:
-		records := []Snapshot{}
-		keys, err := dsc.GetAll(ctx, datastore.NewQuery("Snapshot").Filter("Area =", area).Order("-TimeStamp"), &records)
+		snapshots := []Snapshot{}
+		keys, err := dsc.GetAll(ctx, datastore.NewQuery("Snapshot").Filter("Area =", area).Order("-TimeStamp"), &snapshots)
 		if err != nil {
 			reportError(http.StatusInternalServerError, err.Error(), w)
 			return
 		}
-		snapshots := []KeyedRecord{}
-		ny, err := time.LoadLocation("America/New_York")
-		if err != nil {
-			log.Printf("Unable to load location from TZ DB.")
-		}
-		for i, r := range records {
-			if ny != nil {
-				r.TimeStamp = r.TimeStamp.In(ny)
-			}
-			snapshots = append(snapshots, KeyedRecord{Snapshot: r, Key: keys[i]})
-		}
-		if err = historyTmpl.Execute(w, Listing{Area: area, Records: snapshots}); err != nil {
+		records := addKeysToSnapshots(snapshots, keys)
+		if err = historyTmpl.Execute(w, Listing{Area: area, Records: records}); err != nil {
 			msg := fmt.Sprintf("Unable to render history template: %v.", err)
 			reportError(http.StatusInternalServerError, msg, w)
 		}
@@ -178,6 +184,26 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func csvHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	snapshots := []Snapshot{}
+	keys, err := dsc.GetAll(ctx, datastore.NewQuery("Snapshot").Order("-TimeStamp"), &snapshots)
+	if err != nil {
+		reportError(http.StatusInternalServerError, err.Error(), w)
+		return
+	}
+	records := addKeysToSnapshots(snapshots, keys)
+	allRows := [][]string{[]string{"DateTime", "Area", "People"}}
+	for _, r := range records {
+		allRows = append(allRows, []string{r.TimeStamp.Format("2006-01-02 @ 3:04 pm"), r.Area, strconv.Itoa(int(r.People))})
+	}
+	w.Header().Set("Content-type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", "attachment; filename=census-data.csv")
+	if err := csv.NewWriter(w).WriteAll(allRows); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func main() {
 	ctx := context.Background()
 	var err error
@@ -193,6 +219,7 @@ func main() {
 	log.Printf("Listening on port %s", port)
 	http.Handle("/static/", http.FileServer(http.Dir("static")))
 	http.HandleFunc("/history", historyHandler)
+	http.HandleFunc("/csv", csvHandler)
 	http.HandleFunc("/", indexHandler)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }

@@ -3,7 +3,7 @@
 <title>Census: track indoor space usage</title>
 
 <h1>Floor {{.Floor}}: tap a blue box.</h1>
-<p><a href="/?floor={{if eq .Floor "2"}}1{{else}}2{{end}}">Switch floor</a></p>
+<p><a href="/?floor={{if eq .Floor "2"}}1{{else}}2{{end}}">Switch floor</a> or <a href="/csv">download data as CSV</a>.</p>
 
 <div>
 <img src="https://census.okamuza.net/static/{{.Floor}}.png" usemap="#floor{{.Floor}}">
