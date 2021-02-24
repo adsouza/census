@@ -50,7 +50,7 @@ func extractNumbers(r *http.Request, fields []IntFieldName) (map[IntFieldName]in
 }
 
 func reportError(statusCode int, msg string, w http.ResponseWriter) {
-	log.Printf(msg)
+	log.Print(msg)
 	w.WriteHeader(statusCode)
 	fmt.Fprintln(w, msg)
 }
