@@ -148,7 +148,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		snapshots := []Snapshot{}
-		keys, err := dsc.GetAll(ctx, datastore.NewQuery("Snapshot").Filter("Area =", area).Order("-TimeStamp"), &snapshots)
+		keys, err := dsc.GetAll(ctx, datastore.NewQuery("Snapshot").FilterField("Area", "=", area).Order("-TimeStamp"), &snapshots)
 		if err != nil {
 			reportError(http.StatusInternalServerError, err.Error(), w)
 			return
