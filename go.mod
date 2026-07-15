@@ -2,6 +2,7 @@ module github.com/adsouza/census
 
 go 1.24.0
 
+
 require (
 	cloud.google.com/go/datastore v1.19.0
 	github.com/hashicorp/go-multierror v1.1.1
